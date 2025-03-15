@@ -31,7 +31,7 @@
 // --- Core Character Mapping ---
 
 // CP437 to Unicode mapping (byte to code point)
-const CoreMapping = {
+export const CoreMapping = {
   /***
      * Unicode character 0x2060 is chosen as the "null" (ASCII: 0) character in base256, because
      * of the following desirable properties:
@@ -145,21 +145,46 @@ const CoreMapping = {
  * @returns {Object} A new immutable mapping object with the remapped value.
  */
 Object.defineProperty(CoreMapping, 'tr', {
-  value: tr
-});
-function tr (byte, newUnicode) {
-  const byteNum = typeof byte === 'string' ? byte.charCodeAt(0).toString() : byte.toString();
-  if (!CoreMapping[byteNum]) {
-    throw new Error(`Byte ${byte} not found in CoreMapping`);
-  }
-  if (!newUnicode.match(/^U\+[0-9A-F]{4}$/i)) {
-    throw new Error('Invalid Unicode format; use "U+XXXX" where XXXX is a 4-digit hex code');
-  }
+  value: function (byte, newUnicode) {
+    const byteNum = typeof byte === 'string' ? byte.charCodeAt(0).toString() : byte.toString();
+    if (!CoreMapping[byteNum]) {
+      throw new Error(`Byte ${byte} not found in CoreMapping`);
+    }
+    if (!newUnicode.match(/^U\+[0-9A-F]{4}$/i)) {
+      throw new Error('Invalid Unicode format; use "U+XXXX" where XXXX is a 4-digit hex code');
+    }
 
-  const newMapping = { ...CoreMapping };
-  newMapping[byteNum] = newUnicode;
-  return Object.freeze(newMapping);
-};
+    const newMapping = { ...CoreMapping };
+    newMapping[byteNum] = newUnicode;
+    Object.defineProperty(newMapping, 'tr', { value: CoreMapping.tr });
+    Object.defineProperty(newMapping, 'validate', { value: CoreMapping.validate });
+
+    return Object.freeze(newMapping);
+  }
+});
+
+/**
+ * Validates the mapping to ensure no duplicate Unicode code points.
+ * @returns {Object} The validated mapping (same as input if valid).
+ * @throws {Error} If a duplicate Unicode code point is found.
+ */
+Object.defineProperty(CoreMapping, 'validate', {
+  value: function () {
+    const codePoints = new Set();
+    for (const unicode of Object.values(this)) {
+      const codePoint = parseInt(unicode.slice(2), 16);
+      if (codePoints.has(codePoint)) {
+        throw new Error(`Duplicate Unicode code point found: ${unicode}`);
+      }
+      codePoints.add(codePoint);
+    }
+    const newMapping = { ...this };
+    Object.defineProperty(newMapping, 'tr', { value: CoreMapping.tr });
+    Object.defineProperty(newMapping, 'validate', { value: CoreMapping.validate });
+
+    return Object.freeze(newMapping);
+  }
+});
 
 // --- Core Base256 Encoding Logic ---
 
@@ -176,6 +201,8 @@ export function createEncoder(cp437ToUnicode) {
   const codePointToByteMap = Object.freeze(Object.fromEntries(
     Object.entries(byteToCodePointMap).map(([byte, codePoint]) => [codePoint, parseInt(byte)])
   ));
+
+  console.log(codePointToByteMap);
 
   const BufferPolyfill = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : class Buffer extends Uint8Array {
     static from(data) {
@@ -265,13 +292,15 @@ export function createEncoder(cp437ToUnicode) {
       }
 
       const bytes = new Uint8Array(input.length);
-      for (let i = 0; i < input.length; i++) {
-        const codePoint = input.codePointAt(i);
+      let i = 0;
+      for(const char of input) {
+        const codePoint = char.codePointAt(0);
         const byte = codePointToByteMap[codePoint];
         if (byte === undefined) {
           throw new Error(`Invalid Base256 character at position ${i}: ${input[i]}`);
         }
         bytes[i] = byte;
+        i++;
       }
 
       return bytesToOutput(bytes, outputType);

@@ -1,4 +1,4 @@
-# The Base437 Encoding - See Binary the Way It Wants to Be Seen
+# The Base437 Data Encoding - See Binary the Way It Wants to Be Seen
 
 ***As IBM Code Page 437 Characters***
 

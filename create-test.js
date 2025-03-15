@@ -2,7 +2,7 @@
 // create-test.js
 // Creates an index.html file with a Base256-encoded image and converts it to Base64
 
-import { createEncoder, CoreMapping } from './base256.js';
+import { createEncoder, CoreMapping } from './base437.js';
 import fs from 'fs';
 
 if (process.argv.length < 3) {
@@ -16,8 +16,8 @@ const imageBuffer = fs.readFileSync(imagePath);
 // Encode the image to Base256 with a remapped quotation mark for HTML safety
 const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate(); // Remap " for HTML safety
 const htmlEncoder = createEncoder(htmlSafeMapping);
-const base256Data = htmlEncoder.encode(new Uint8Array(imageBuffer));
-const base256Url = `data:image/png;base256,${base256Data}`;
+const base437Data = htmlEncoder.encode(new Uint8Array(imageBuffer));
+const base437Url = `data:image/png;base437,${base437Data}`;
 
 // Generate index.html content with inline script
 const htmlContent = `
@@ -26,7 +26,7 @@ const htmlContent = `
 <head>
   <title>Base256 Image Test</title>
   <script type="module">
-    import { createEncoder, CoreMapping } from './base256.js';
+    import { createEncoder, CoreMapping } from './base437.js';
 
     // Create custom mapping and encoder
     const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate();
@@ -34,15 +34,15 @@ const htmlContent = `
 
     window.onload = () => {
       const img = document.getElementById('testImage');
-      const base256Src = img.getAttribute('src');
-      const base64Src = htmlEncoder.toBase64Url(base256Src);
+      const base437Src = img.getAttribute('src');
+      const base64Src = htmlEncoder.toBase64Url(base437Src);
       img.setAttribute('src', base64Src);
       console.log('Converted to Base64:', base64Src);
     };
   </script>
 </head>
 <body>
-  <img id="testImage" alt="Test Image" src="${base256Url}" width=200>
+  <img id="testImage" alt="Test Image" src="${base437Url}" width=200>
 </body>
 </html>
 `.trim();

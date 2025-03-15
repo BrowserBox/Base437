@@ -1,0 +1,26 @@
+{
+  "name": "base437",
+  "version": "1.0.0",
+  "module": true,
+  "description": "The Base256 Encoding - see binary the way it wants to be seen",
+  "keywords": [
+    "base64",
+    "base437",
+    "baseAnything"
+  ],
+  "homepage": "https://github.com/BrowserBox/Base256#readme",
+  "bugs": {
+    "url": "https://github.com/BrowserBox/Base256/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrowserBox/Base256.git"
+  },
+  "license": "MIT",
+  "author": "@dosy",
+  "type": "module",
+  "main": "base437.js",
+  "scripts": {
+    "test": "node create-test.js"
+  }
+}

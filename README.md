@@ -18,7 +18,7 @@
 To get started, install Base256 via npm:
 
 ```bash
-npm install base256
+npm install base437
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ npm install base256
 ### Basic Encoding/Decoding
 
 ```javascript
-import { encode, decode } from 'base256';
+import { encode, decode } from 'base437';
 
 // Encode a string to Base256
 const text = "Hello, World!";
@@ -43,15 +43,15 @@ console.log(decoded); // "Hello, World!"
 Base256 includes a built-in method to convert its encoded data URLs to Base64 for browser rendering.
 
 ```javascript
-import { encode, toBase64Url } from 'base256';
+import { encode, toBase64Url } from 'base437';
 
 // Encode a PNG image to Base256
 const pngData = new Uint8Array([137, 80, 78, 71, ...]); // PNG binary data
-const base256Data = encode(pngData);
-const base256Url = `data:image/png;base256,${base256Data}`;
+const base437Data = encode(pngData);
+const base437Url = `data:image/png;base437,${base437Data}`;
 
 // Convert to Base64 for browser use
-const base64Url = toBase64Url(base256Url);
+const base64Url = toBase64Url(base437Url);
 document.querySelector('img').src = base64Url; // Render the image
 ```
 
@@ -61,10 +61,10 @@ Run Base256 directly from the command line in Node.js.
 
 ```bash
 # Encode a file to Base256
-node base256.js input.bin > output.base256
+node base437.js input.bin > output.base437
 
 # Decode a Base256 file back to binary
-node base256.js output.base256 --decode > input.bin
+node base437.js output.base437 --decode > input.bin
 ```
 
 ## Extensibility: Sculpt Your Own Encodings
@@ -79,12 +79,12 @@ The `createEncoder` function builds an encoder/decoder pair from a mapping. Use 
 
 The `validate()` method checks for duplicate Unicode code points, throwing an error if conflicts arise.
 
-#### Example: base256htmlAttribute
+#### Example: base437htmlAttribute
 
 Create a Base256 encoding safe for HTML attributes by remapping problematic characters:
 
 ```javascript
-import { createEncoder, CoreMapping } from 'base256';
+import { createEncoder, CoreMapping } from 'base437';
 
 // Customize mapping for HTML safety
 const htmlSafeMapping = CoreMapping
@@ -113,8 +113,8 @@ const invalidMapping = CoreMapping.tr('0', 'U+0020').validate(); // Throws: Dupl
 
 #### Crafting Other Domains
 
-- `base256url`: Remap `/`, `?`, `#`, `=` for URL safety using invisible Unicode characters.
-- `base256json`: Remap `\`, `"` for JSON string safety.
+- `base437url`: Remap `/`, `?`, `#`, `=` for URL safety using invisible Unicode characters.
+- `base437json`: Remap `\`, `"` for JSON string safety.
 
 Use `CoreMapping.tr()` to adjust, validate, and pass to `createEncoder`.
 
@@ -136,7 +136,7 @@ Base256 is lightweight and doesn’t rely on any external dependencies, making i
 We invite you to shape Base256’s future! Share your custom encodings or enhancements via pull requests. Add reusable mappings to the `mappings/` directory!
 
 > **Note**  
-> Have a cool encoding like `base256url` or `base256json`? Open a PR—we’d love to feature it!
+> Have a cool encoding like `base437url` or `base437json`? Open a PR—we’d love to feature it!
 
 ## License
 

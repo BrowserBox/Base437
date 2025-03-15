@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// base256.js
+// base437.js
 // Base256 - See binary the way it wants to be seen
 // Using Code Page 437 Unicode mappings
 
@@ -33,7 +33,7 @@
 // CP437 to Unicode mapping (byte to code point)
 export const CoreMapping = {
   /***
-     * Unicode character 0x2060 is chosen as the "null" (ASCII: 0) character in base256, because
+     * Unicode character 0x2060 is chosen as the "null" (ASCII: 0) character in base437, because
      * of the following desirable properties:
      * 
      * - Does not trigger rendering changes (like Emoji display)
@@ -340,7 +340,7 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
      * Converts a Base256-encoded data URL to a Base64-encoded data URL for use in HTML.
      * This is an example of a domain-specific extension that converts Base256 data to another format.
      * See the README for how to create your own domain-specific extensions.
-     * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base256,éPNG...").
+     * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base437,éPNG...").
      * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...").
      */
     toBase64Url(dataUrl) {
@@ -348,21 +348,23 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
         throw new Error('Input must be a valid data URL');
       }
 
-      const match = dataUrl.match(/^data:([^;]+);base256,(.*)$/);
+      const match = dataUrl.match(/^data:([^;]+);base437,(.*)$/);
       if (!match) {
         throw new Error('Input must be a Base256-encoded data URL');
       }
 
       const mimeType = match[1];
-      const base256Data = match[2];
+      const base437Data = match[2];
 
-      const bytes = this.decode(base256Data, 'uint8array');
+      const bytes = this.decode(base437Data, 'uint8array');
       const base64Data = BufferClass.from(bytes).toString('base64');
 
       return `data:${mimeType};base64,${base64Data}`;
     }
   };
 }
+
+export const { encode, decode, toBase64Url } = createEncoder();
 
 // --- CLI and Global Setup ---
 
@@ -380,7 +382,7 @@ if (typeof window === 'undefined' && typeof globalThis.process !== 'undefined' &
     console.info(`Usage: ${process.argv[1]} [file] [--decode]`);
   }
 } else {
-  if (!globalThis.__base256_no_globals) {
+  if (!globalThis.__base437_no_globals) {
     globalThis.createEncoder = createEncoder;
     globalThis.CoreMapping = CoreMapping;
   }

@@ -186,6 +186,35 @@ Object.defineProperty(CoreMapping, 'validate', {
   }
 });
 
+// Polyfill Buffer for browser if it doesn't exist
+const BufferClass = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : class Buffer extends Uint8Array {
+  static from(data) {
+    if (data instanceof ArrayBuffer || data.buffer instanceof ArrayBuffer) {
+      return new this(new Uint8Array(data));
+    }
+    if (typeof data === 'string') {
+      return new this(new TextEncoder().encode(data));
+    }
+    return new this(data);
+  }
+  toString(encoding = 'utf8') {
+    if (encoding === 'base64') {
+      // Base64 encoding
+      const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      let base64 = '';
+      for (let i = 0; i < this.length; i += 3) {
+        const chunk = (this[i] << 16) + (i + 1 < this.length ? this[i + 1] << 8 : 0) + (i + 2 < this.length ? this[i + 2] : 0);
+        base64 += base64Chars[(chunk >> 18) & 63] +
+                  base64Chars[(chunk >> 12) & 63] +
+                  (i + 1 < this.length ? base64Chars[(chunk >> 6) & 63] : '=') +
+                  (i + 2 < this.length ? base64Chars[chunk & 63] : '=');
+      }
+      return base64;
+    }
+    return new TextDecoder(encoding).decode(this);
+  }
+};
+
 // --- Core Base256 Encoding Logic ---
 
 /**
@@ -193,7 +222,7 @@ Object.defineProperty(CoreMapping, 'validate', {
  * @param {Object<string, string>} cp437ToUnicode - Mapping of byte values (0-255) to Unicode code points (e.g., "U+2060").
  * @returns {{ encode: Function, decode: Function }} - An object with encode and decode functions.
  */
-export function createEncoder(cp437ToUnicode) {
+export function createEncoder(cp437ToUnicode = CoreMapping) {
   const byteToCodePointMap = Object.freeze(Object.fromEntries(
     Object.entries(cp437ToUnicode).map(([byte, unicode]) => [parseInt(byte), parseInt(unicode.slice(2), 16)])
   ));
@@ -201,8 +230,6 @@ export function createEncoder(cp437ToUnicode) {
   const codePointToByteMap = Object.freeze(Object.fromEntries(
     Object.entries(byteToCodePointMap).map(([byte, codePoint]) => [codePoint, parseInt(byte)])
   ));
-
-  console.log(codePointToByteMap);
 
   const BufferPolyfill = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : class Buffer extends Uint8Array {
     static from(data) {
@@ -304,45 +331,42 @@ export function createEncoder(cp437ToUnicode) {
       }
 
       return bytesToOutput(bytes, outputType);
+    },
+
+
+    // --- Extensions ---
+
+    /**
+     * Converts a Base256-encoded data URL to a Base64-encoded data URL for use in HTML.
+     * This is an example of a domain-specific extension that converts Base256 data to another format.
+     * See the README for how to create your own domain-specific extensions.
+     * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base256,éPNG...").
+     * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...").
+     */
+    toBase64Url(dataUrl) {
+      if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+        throw new Error('Input must be a valid data URL');
+      }
+
+      const match = dataUrl.match(/^data:([^;]+);base256,(.*)$/);
+      if (!match) {
+        throw new Error('Input must be a Base256-encoded data URL');
+      }
+
+      const mimeType = match[1];
+      const base256Data = match[2];
+
+      const bytes = this.decode(base256Data, 'uint8array');
+      const base64Data = BufferClass.from(bytes).toString('base64');
+
+      return `data:${mimeType};base64,${base64Data}`;
     }
   };
 }
 
-// --- Default Encoder ---
-
-export const { encode, decode } = createEncoder(CoreMapping);
-
-// --- Extensions ---
-
-/**
- * Converts a Base256-encoded data URL to a Base64-encoded data URL for use in HTML.
- * This is an example of a domain-specific extension that converts Base256 data to another format.
- * See the README for how to create your own domain-specific extensions.
- * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base256,éPNG...").
- * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...").
- */
-export function toBase64Url(dataUrl) {
-  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
-    throw new Error('Input must be a valid data URL');
-  }
-
-  const match = dataUrl.match(/^data:([^;]+);base256,(.*)$/);
-  if (!match) {
-    throw new Error('Input must be a Base256-encoded data URL');
-  }
-
-  const mimeType = match[1];
-  const base256Data = match[2];
-
-  const bytes = decode(base256Data, 'uint8array');
-  const base64Data = BufferClass.from(bytes).toString('base64');
-
-  return `data:${mimeType};base64,${base64Data}`;
-}
-
 // --- CLI and Global Setup ---
 
-if (typeof window === 'undefined' && typeof globalThis.process !== 'undefined') {
+if (typeof window === 'undefined' && typeof globalThis.process !== 'undefined' && import.meta.url === `file://${process.argv[1]}` ) {
   if (process.argv[2]) {
     let fs;
     import('fs').then(module => {
@@ -357,14 +381,7 @@ if (typeof window === 'undefined' && typeof globalThis.process !== 'undefined') 
   }
 } else {
   if (!globalThis.__base256_no_globals) {
-    if (!globalThis.encode) {
-      globalThis.encode = encode;
-    }
-    if (!globalThis.decode) {
-      globalThis.decode = decode;
-    }
-    if (!globalThis.toBase64Url) {
-      globalThis.toBase64Url = toBase64Url;
-    }
+    globalThis.createEncoder = createEncoder;
+    globalThis.CoreMapping = CoreMapping;
   }
 }

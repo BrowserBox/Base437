@@ -1,15 +1,96 @@
+#!/usr/bin/env node
 // base256.js
 // Base256 - See binary the way it wants to be seen
 // Using Code Page 437 Unicode mappings
 
+//
+//  MIT License
+  //  
+  //  Copyright (c) 2025 Cris & DOSAYGO
+  //  
+  //  Permission is hereby granted, free of charge, to any person obtaining a copy
+  //  of this software and associated documentation files (the "Software"), to deal
+  //  in the Software without restriction, including without limitation the rights
+  //  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  //  copies of the Software, and to permit persons to whom the Software is
+  //  furnished to do so, subject to the following conditions:
+  //  
+  //  The above copyright notice and this permission notice shall be included in all
+  //  copies or substantial portions of the Software.
+  //  
+  //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  //  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  //  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  //  SOFTWARE.
+  //
+//
+
 // CP437 to Unicode mapping (byte to code point)
 const cp437ToUnicodeRaw = {
-  "0": "U+200D", "1": "U+263A", "2": "U+263B", "3": "U+2665", "4": "U+2666", "5": "U+2663",
+  /***
+     * Unicode character 0x2060 is chosen as the "null" (ASCII: 0) character in base256, because
+     * of the following desirable properties:
+     * 
+     * - Does not trigger rendering changes (like Emoji display)
+     * - Is ignored for text segmentation.
+     * - Is zero-width and does not affect layout.
+     *
+     * In many ways it is rendered how the original Null character was rendered in DOS Code Page 437
+     * Or Windows CP1252.
+     * 
+     * More information about this Word Joiner character is below:
+     *
+     *   The word joiner (WJ) is a Unicode format character which is used to indicate that line 
+     *   breaking should not occur at its position.[1] It does not affect the formation of ligatures or cursive 
+     *   joining and is ignored for the purpose of text segmentation.[1] It is encoded since Unicode version 3.2 
+     *   (released in 2002) as U+2060 word joiner (&NoBreak;).
+     *
+     *   The word joiner replaces the zero-width no-break space (ZWNBSP, U+FEFF), as a usage of the no-break space 
+     *   of zero width.
+     *
+     * - From Wikipedia contributors. (2024, April 4). Word joiner. In Wikipedia, The Free Encyclopedia. 
+     * Retrieved 16:17, March 15, 2025, from https://en.wikipedia.org/w/index.php?title=Word_joiner&oldid=1217244655
+  ***/
+  "0": "U+2060", 
+
+  /***
+    * The rest of this table is taken entirely and unmodified from a mapping between the original
+    * Code Page 437 ASCII codes and their equivalent Unicode characters today.
+    * 
+    * This table and more information about Code Page 437 can be found on the relevant Wikipedia page,
+    * quoted below:
+    *
+    *   Code page 437 (CCSID 437) is the character set of the original IBM PC (personal computer).
+    *   It is also known as CP437, OEM-US, OEM 437, PC-8, or MS-DOS Latin US. The set includes all 
+    *   printable ASCII characters as well as some accented letters (diacritics), Greek letters, icons, and line-
+    *   drawing symbols. It is sometimes referred to as the "OEM font" or "high ASCII", or as "extended ASCII" (
+    *   one of many mutually incompatible ASCII extensions).
+    *
+    *   This character set remains the primary set in the core of any EGA and VGA-compatible graphics card. As such, 
+    *   text shown when a PC reboots, before fonts can be loaded and rendered, is typically rendered using this character 
+    *   set. Many file formats developed at the time of the IBM PC are based on code page 437 as well.
+    *
+    * - From Wikipedia contributors. (2025, February 10). Code page 437. In Wikipedia, The Free Encyclopedia. 
+    * Retrieved 16:27, March 15, 2025, from https://en.wikipedia.org/w/index.php?title=Code_page_437&oldid=1275058912
+    *
+    *
+  ***/
+  "1": "U+263A", "2": "U+263B", "3": "U+2665", "4": "U+2666", "5": "U+2663",
   "6": "U+2660", "7": "U+2022", "8": "U+25D8", "9": "U+25CB", "10": "U+25D9", "11": "U+2642",
   "12": "U+2640", "13": "U+266A", "14": "U+266B", "15": "U+263C", "16": "U+25BA", "17": "U+25C4",
   "18": "U+2195", "19": "U+203C", "20": "U+00B6", "21": "U+00A7", "22": "U+25AC", "23": "U+21A8",
   "24": "U+2191", "25": "U+2193", "26": "U+2192", "27": "U+2190", "28": "U+221F", "29": "U+2194",
-  "30": "U+25B2", "31": "U+25BC", "32": "U+0020", "33": "U+0021", "34": "U+0022", "35": "U+0023",
+  "30": "U+25B2", "31": "U+25BC", "32": "U+0020", "33": "U+0021", 
+
+  //"34": "U+0022", 
+  "34": "U+201C",
+
+
+
+  "35": "U+0023",
   "36": "U+0024", "37": "U+0025", "38": "U+0026", "39": "U+0027", "40": "U+0028", "41": "U+0029",
   "42": "U+002A", "43": "U+002B", "44": "U+002C", "45": "U+002D", "46": "U+002E", "47": "U+002F",
   "48": "U+0030", "49": "U+0031", "50": "U+0032", "51": "U+0033", "52": "U+0034", "53": "U+0035",
@@ -59,7 +140,7 @@ const codePointToByte = Object.fromEntries(
 );
 
 // Polyfill Buffer for browser if it doesn't exist
-const BufferClass = typeof Buffer !== 'undefined' ? Buffer : class Buffer extends Uint8Array {
+const BufferClass = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : class Buffer extends Uint8Array {
   static from(data) {
     if (data instanceof ArrayBuffer || data.buffer instanceof ArrayBuffer) {
       return new this(new Uint8Array(data));
@@ -70,6 +151,19 @@ const BufferClass = typeof Buffer !== 'undefined' ? Buffer : class Buffer extend
     return new this(data);
   }
   toString(encoding = 'utf8') {
+    if (encoding === 'base64') {
+      // Base64 encoding
+      const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      let base64 = '';
+      for (let i = 0; i < this.length; i += 3) {
+        const chunk = (this[i] << 16) + (i + 1 < this.length ? this[i + 1] << 8 : 0) + (i + 2 < this.length ? this[i + 2] : 0);
+        base64 += base64Chars[(chunk >> 18) & 63] +
+                  base64Chars[(chunk >> 12) & 63] +
+                  (i + 1 < this.length ? base64Chars[(chunk >> 6) & 63] : '=') +
+                  (i + 2 < this.length ? base64Chars[chunk & 63] : '=');
+      }
+      return base64;
+    }
     return new TextDecoder(encoding).decode(this);
   }
 };
@@ -149,11 +243,59 @@ export function decodeBase256(input, outputType = 'uint8array') {
   return toOutput(bytes, outputType);
 }
 
-// Example usage (for testing):
-if (typeof window === 'undefined' && typeof process !== 'undefined') {
-  const testString = "Hello, World!";
-  const encoded = encodeBase256(testString);
-  console.log('Encoded:', encoded);
-  const decoded = decodeBase256(encoded, 'string');
-  console.log('Decoded:', decoded);
+/**
+ * Convert a Base256-encoded data URL to a Base64-encoded data URL
+ * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base256,éPNG...")
+ * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...")
+ */
+export function convertBase256DataUrlToBase64(dataUrl) {
+  // Validate input
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+    throw new Error('Input must be a valid data URL');
+  }
+
+  // Extract MIME type and encoding
+  const match = dataUrl.match(/^data:([^;]+);base256,(.*)$/);
+  if (!match) {
+    throw new Error('Input must be a Base256-encoded data URL');
+  }
+
+  const mimeType = match[1]; // e.g., "image/png"
+  const base256Data = match[2]; // The Base256-encoded string
+
+  // Decode Base256 to raw bytes
+  const bytes = decodeBase256(base256Data, 'uint8array');
+
+  // Convert bytes to Base64 using BufferClass (which works in both Node and browser)
+  const base64Data = BufferClass.from(bytes).toString('base64');
+
+  // Construct new Base64 data URL
+  return `data:${mimeType};base64,${base64Data}`;
+}
+
+if (typeof window === 'undefined' && typeof globalThis.process !== 'undefined') {
+  if ( process.argv[2] ) {
+    let fs;
+    import('fs').then(module => {
+      fs = module;
+      const fileContent = fs.readFileSync(process.argv[2]);
+      const decode = process.argv[3] == '--decode';
+      const recodedFileContent = (decode ? decodeBase256 : encodeBase256)(decode ? fileContent.toString() : fileContent);
+      process.stdout.write(recodedFileContent);
+    });
+  } else {
+    console.info(`Usage: ${process.argv[1]} [file] [--decode]`);
+  }
+} else {
+  if ( ! globalThis.__base256_no_globals ) {
+    if ( ! globalThis.encodeBase256 ) {
+      globalThis.encodeBase256 = encodeBase256;
+    }
+    if ( ! globalThis.decodeBase256 ) {
+      globalThis.decodeBase256 = decodeBase256;
+    }
+    if ( ! globalThis.convertBase256DataUrlToBase64 ) {
+      globalThis.convertBase256DataUrlToBase64 = convertBase256DataUrlToBase64;
+    }
+  }
 }

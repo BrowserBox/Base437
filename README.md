@@ -4,6 +4,8 @@
 
 > A retro aesthetic meets modern utility! Base437 brings the nostalgic charm of the original Code Page 437 (OG IBM PC) character set to life, transforming binary data into a mesmerizing display of line-drawing symbols, Greek letters, and accented glyphs—a visual ode to the early computing era. But it’s not just eye candy! For the pragmatic engineer, Base437 strips away Base64’s obfuscation, letting you inspect binary data *close to the metal*. This raw clarity accelerates debugging and deepens your grasp of the data at hand. With a tightly curated 437-character set, Base437 ensures cross-context compatibility, and the intuitive `tr` API—complete with `validate()`—empowers you to sculpt encodings for any domain.
 
+<img width="695" alt="437" src="https://github.com/user-attachments/assets/596fc410-01a9-4557-8745-310a4c1eab27" />
+
 [Read more about Code Page 437, a.k.a, "High ~Elvish~ ASCII"](https://en.wikipedia.org/wiki/Code_page_437)
 
 ## Features

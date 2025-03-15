@@ -28,8 +28,10 @@
   //
 //
 
+// --- Core Character Mapping ---
+
 // CP437 to Unicode mapping (byte to code point)
-const cp437ToUnicodeRaw = {
+const CoreMapping = {
   /***
      * Unicode character 0x2060 is chosen as the "null" (ASCII: 0) character in base256, because
      * of the following desirable properties:
@@ -85,8 +87,16 @@ const cp437ToUnicodeRaw = {
   "24": "U+2191", "25": "U+2193", "26": "U+2192", "27": "U+2190", "28": "U+221F", "29": "U+2194",
   "30": "U+25B2", "31": "U+25BC", "32": "U+0020", "33": "U+0021", 
 
-  "34": "U+0022", 
-  //"34": "U+201C",
+  // Domain-speicifc mappings
+    "34": "U+0022",  // regular ASCII quote "
+    // The below line demonstrates how a mapping could conceptually be modified to 
+    // product output suitable for a HTML attribute. In this change the conflicting quote '"' character
+    // is mapped to a unicode quote character that does not interefere with HTML attribute
+    // parsing. 
+    //"34": "U+201C", // unicode quote
+    // We provide an API for these changes
+    // CoreMapping.tr(from, to)
+    //
 
   "35": "U+0023",
   "36": "U+0024", "37": "U+0025", "38": "U+0026", "39": "U+0027", "40": "U+0028", "41": "U+0029",
@@ -128,172 +138,204 @@ const cp437ToUnicodeRaw = {
   "252": "U+207F", "253": "U+00B2", "254": "U+25A0", "255": "U+00A0"
 };
 
-// Pre-compute mappings at parse time
-const byteToCodePoint = Object.fromEntries(
-  Object.entries(cp437ToUnicodeRaw).map(([byte, unicode]) => [parseInt(byte), parseInt(unicode.slice(2), 16)])
-);
-
-const codePointToByte = Object.fromEntries(
-  Object.entries(byteToCodePoint).map(([byte, codePoint]) => [codePoint, parseInt(byte)])
-);
-
-// Polyfill Buffer for browser if it doesn't exist
-const BufferClass = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : class Buffer extends Uint8Array {
-  static from(data) {
-    if (data instanceof ArrayBuffer || data.buffer instanceof ArrayBuffer) {
-      return new this(new Uint8Array(data));
-    }
-    if (typeof data === 'string') {
-      return new this(new TextEncoder().encode(data));
-    }
-    return new this(data);
+/**
+ * Creates an immutable copy of the CoreMapping with a specific byte remapped to a new Unicode code point.
+ * @param {string} byte - The byte value as a string (e.g., '"') or number (e.g., "34") to remap.
+ * @param {string} newUnicode - The new Unicode code point (e.g., "U+201C").
+ * @returns {Object} A new immutable mapping object with the remapped value.
+ */
+Object.defineProperty(CoreMapping, 'tr', {
+  value: tr
+});
+function tr (byte, newUnicode) {
+  const byteNum = typeof byte === 'string' ? byte.charCodeAt(0).toString() : byte.toString();
+  if (!CoreMapping[byteNum]) {
+    throw new Error(`Byte ${byte} not found in CoreMapping`);
   }
-  toString(encoding = 'utf8') {
-    if (encoding === 'base64') {
-      // Base64 encoding
-      const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-      let base64 = '';
-      for (let i = 0; i < this.length; i += 3) {
-        const chunk = (this[i] << 16) + (i + 1 < this.length ? this[i + 1] << 8 : 0) + (i + 2 < this.length ? this[i + 2] : 0);
-        base64 += base64Chars[(chunk >> 18) & 63] +
-                  base64Chars[(chunk >> 12) & 63] +
-                  (i + 1 < this.length ? base64Chars[(chunk >> 6) & 63] : '=') +
-                  (i + 2 < this.length ? base64Chars[chunk & 63] : '=');
-      }
-      return base64;
-    }
-    return new TextDecoder(encoding).decode(this);
+  if (!newUnicode.match(/^U\+[0-9A-F]{4}$/i)) {
+    throw new Error('Invalid Unicode format; use "U+XXXX" where XXXX is a 4-digit hex code');
   }
+
+  const newMapping = { ...CoreMapping };
+  newMapping[byteNum] = newUnicode;
+  return Object.freeze(newMapping);
 };
 
-// Helper to get raw bytes from various input types
-function toBytes(input) {
-  if (input instanceof ArrayBuffer) {
-    return new Uint8Array(input);
-  }
-  if (input instanceof Uint8Array || input instanceof BufferClass || input instanceof Uint8ClampedArray) {
-    return new Uint8Array(input);
-  }
-  if (typeof input === 'string') {
-    return new TextEncoder().encode(input);
-  }
-  throw new Error('Unsupported input type');
-}
-
-// Helper to convert bytes to desired output type
-function toOutput(bytes, outputType = 'uint8array') {
-  switch (outputType.toLowerCase()) {
-    case 'uint8array':
-      return bytes;
-    case 'arraybuffer':
-      return bytes.buffer;
-    case 'buffer':
-      return BufferClass.from(bytes);
-    case 'string':
-      return new TextDecoder().decode(bytes);
-    case 'array':
-      return Array.from(bytes);
-    default:
-      throw new Error('Unsupported output type');
-  }
-}
+// --- Core Base256 Encoding Logic ---
 
 /**
- * Encode data to Base256 string using CP437 Unicode points
- * @param {ArrayBuffer|Uint8Array|Buffer|Uint8ClampedArray|string} input - Input data
- * @returns {string} Base256 encoded string
+ * Creates a Base256 encoder/decoder with a custom mapping.
+ * @param {Object<string, string>} cp437ToUnicode - Mapping of byte values (0-255) to Unicode code points (e.g., "U+2060").
+ * @returns {{ encode: Function, decode: Function }} - An object with encode and decode functions.
  */
-export function encodeBase256(input) {
-  const bytes = toBytes(input);
-  let result = '';
-  
-  for (const byte of bytes) {
-    const codePoint = byteToCodePoint[byte];
-    if (codePoint === undefined) throw new Error(`Invalid byte value: ${byte}`);
-    result += String.fromCodePoint(codePoint);
-  }
-  
-  return result;
-}
+export function createEncoder(cp437ToUnicode) {
+  const byteToCodePointMap = Object.freeze(Object.fromEntries(
+    Object.entries(cp437ToUnicode).map(([byte, unicode]) => [parseInt(byte), parseInt(unicode.slice(2), 16)])
+  ));
 
-/**
- * Decode Base256 string back to bytes
- * @param {string} input - Base256 encoded string
- * @param {string} [outputType='uint8array'] - Desired output type: 'uint8array', 'arraybuffer', 'buffer', 'string', 'array'
- * @returns {Uint8Array|ArrayBuffer|Buffer|string|number[]} Decoded data in specified format
- */
-export function decodeBase256(input, outputType = 'uint8array') {
-  if (typeof input !== 'string') {
-    throw new Error('Input must be a string');
-  }
-  
-  const bytes = new Uint8Array(input.length);
-  
-  for (let i = 0; i < input.length; i++) {
-    const codePoint = input.codePointAt(i);
-    const byte = codePointToByte[codePoint];
-    if (byte === undefined) {
-      throw new Error(`Invalid Base256 character at position ${i}: ${input[i]}`);
+  const codePointToByteMap = Object.freeze(Object.fromEntries(
+    Object.entries(byteToCodePointMap).map(([byte, codePoint]) => [codePoint, parseInt(byte)])
+  ));
+
+  const BufferPolyfill = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer : class Buffer extends Uint8Array {
+    static from(data) {
+      if (data instanceof ArrayBuffer || data.buffer instanceof ArrayBuffer) {
+        return new this(new Uint8Array(data));
+      }
+      if (typeof data === 'string') {
+        return new this(new TextEncoder().encode(data));
+      }
+      return new this(data);
     }
-    bytes[i] = byte;
+    toString(encoding = 'utf8') {
+      if (encoding === 'base64') {
+        const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+        let base64 = '';
+        for (let i = 0; i < this.length; i += 3) {
+          const chunk = (this[i] << 16) + (i + 1 < this.length ? this[i + 1] << 8 : 0) + (i + 2 < this.length ? this[i + 2] : 0);
+          base64 += base64Chars[(chunk >> 18) & 63] +
+                    base64Chars[(chunk >> 12) & 63] +
+                    (i + 1 < this.length ? base64Chars[(chunk >> 6) & 63] : '=') +
+                    (i + 2 < this.length ? base64Chars[chunk & 63] : '=');
+        }
+        return base64;
+      }
+      return new TextDecoder(encoding).decode(this);
+    }
+  };
+
+  function inputToBytes(input) {
+    if (input instanceof ArrayBuffer) {
+      return new Uint8Array(input);
+    }
+    if (input instanceof Uint8Array || input instanceof BufferPolyfill || input instanceof Uint8ClampedArray) {
+      return new Uint8Array(input);
+    }
+    if (typeof input === 'string') {
+      return new TextEncoder().encode(input);
+    }
+    throw new Error('Unsupported input type: must be ArrayBuffer, Uint8Array, Buffer, Uint8ClampedArray, or string');
   }
-  
-  return toOutput(bytes, outputType);
+
+  function bytesToOutput(bytes, outputType = 'uint8array') {
+    switch (outputType.toLowerCase()) {
+      case 'uint8array':
+        return bytes;
+      case 'arraybuffer':
+        return bytes.buffer;
+      case 'buffer':
+        return BufferPolyfill.from(bytes);
+      case 'string':
+        return new TextDecoder().decode(bytes);
+      case 'array':
+        return Array.from(bytes);
+      default:
+        throw new Error(`Unsupported output type: ${outputType}. Use 'uint8array', 'arraybuffer', 'buffer', 'string', or 'array'`);
+    }
+  }
+
+  return {
+    /**
+     * Encodes data to a Base256 string using the provided mapping.
+     * @param {ArrayBuffer|Uint8Array|Buffer|Uint8ClampedArray|string} input - Input data to encode.
+     * @returns {string} Base256-encoded string.
+     */
+    encode(input) {
+      const bytes = inputToBytes(input);
+      let result = '';
+      for (const byte of bytes) {
+        const codePoint = byteToCodePointMap[byte];
+        if (codePoint === undefined) {
+          throw new Error(`Invalid byte value: ${byte}. Must be between 0 and 255`);
+        }
+        result += String.fromCodePoint(codePoint);
+      }
+      return result;
+    },
+
+    /**
+     * Decodes a Base256 string back to bytes using the provided mapping.
+     * @param {string} input - Base256-encoded string.
+     * @param {string} [outputType='uint8array'] - Desired output type: 'uint8array', 'arraybuffer', 'buffer', 'string', 'array'.
+     * @returns {Uint8Array|ArrayBuffer|Buffer|string|number[]} Decoded data in the specified format.
+     */
+    decode(input, outputType = 'uint8array') {
+      if (typeof input !== 'string') {
+        throw new Error('Input must be a string');
+      }
+
+      const bytes = new Uint8Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const codePoint = input.codePointAt(i);
+        const byte = codePointToByteMap[codePoint];
+        if (byte === undefined) {
+          throw new Error(`Invalid Base256 character at position ${i}: ${input[i]}`);
+        }
+        bytes[i] = byte;
+      }
+
+      return bytesToOutput(bytes, outputType);
+    }
+  };
 }
 
+// --- Default Encoder ---
+
+export const { encode, decode } = createEncoder(CoreMapping);
+
+// --- Extensions ---
+
 /**
- * Convert a Base256-encoded data URL to a Base64-encoded data URL
- * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base256,éPNG...")
- * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...")
+ * Converts a Base256-encoded data URL to a Base64-encoded data URL for use in HTML.
+ * This is an example of a domain-specific extension that converts Base256 data to another format.
+ * See the README for how to create your own domain-specific extensions.
+ * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base256,éPNG...").
+ * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...").
  */
-export function convertBase256DataUrlToBase64(dataUrl) {
-  // Validate input
+export function toBase64Url(dataUrl) {
   if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
     throw new Error('Input must be a valid data URL');
   }
 
-  // Extract MIME type and encoding
   const match = dataUrl.match(/^data:([^;]+);base256,(.*)$/);
   if (!match) {
     throw new Error('Input must be a Base256-encoded data URL');
   }
 
-  const mimeType = match[1]; // e.g., "image/png"
-  const base256Data = match[2]; // The Base256-encoded string
+  const mimeType = match[1];
+  const base256Data = match[2];
 
-  // Decode Base256 to raw bytes
-  const bytes = decodeBase256(base256Data, 'uint8array');
-
-  // Convert bytes to Base64 using BufferClass (which works in both Node and browser)
+  const bytes = decode(base256Data, 'uint8array');
   const base64Data = BufferClass.from(bytes).toString('base64');
 
-  // Construct new Base64 data URL
   return `data:${mimeType};base64,${base64Data}`;
 }
 
+// --- CLI and Global Setup ---
+
 if (typeof window === 'undefined' && typeof globalThis.process !== 'undefined') {
-  if ( process.argv[2] ) {
+  if (process.argv[2]) {
     let fs;
     import('fs').then(module => {
       fs = module;
       const fileContent = fs.readFileSync(process.argv[2]);
-      const decode = process.argv[3] == '--decode';
-      const recodedFileContent = (decode ? decodeBase256 : encodeBase256)(decode ? fileContent.toString() : fileContent);
+      const decodeMode = process.argv[3] === '--decode';
+      const recodedFileContent = (decodeMode ? decode : encode)(decodeMode ? fileContent.toString() : fileContent);
       process.stdout.write(recodedFileContent);
     });
   } else {
     console.info(`Usage: ${process.argv[1]} [file] [--decode]`);
   }
 } else {
-  if ( ! globalThis.__base256_no_globals ) {
-    if ( ! globalThis.encodeBase256 ) {
-      globalThis.encodeBase256 = encodeBase256;
+  if (!globalThis.__base256_no_globals) {
+    if (!globalThis.encode) {
+      globalThis.encode = encode;
     }
-    if ( ! globalThis.decodeBase256 ) {
-      globalThis.decodeBase256 = decodeBase256;
+    if (!globalThis.decode) {
+      globalThis.decode = decode;
     }
-    if ( ! globalThis.convertBase256DataUrlToBase64 ) {
-      globalThis.convertBase256DataUrlToBase64 = convertBase256DataUrlToBase64;
+    if (!globalThis.toBase64Url) {
+      globalThis.toBase64Url = toBase64Url;
     }
   }
 }

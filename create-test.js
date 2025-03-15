@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // create-test.js
-// Creates an index.html file with a Base256-encoded image and converts it to Base64
+// Creates an index.html file with a Base437-encoded image and converts it to Base64
 
 import { createEncoder, CoreMapping } from './base437.js';
 import fs from 'fs';
@@ -13,7 +13,7 @@ if (process.argv.length < 3) {
 const imagePath = process.argv[2];
 const imageBuffer = fs.readFileSync(imagePath);
 
-// Encode the image to Base256 with a remapped quotation mark for HTML safety
+// Encode the image to Base437 with a remapped quotation mark for HTML safety
 const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate(); // Remap " for HTML safety
 const htmlEncoder = createEncoder(htmlSafeMapping);
 const base437Data = htmlEncoder.encode(new Uint8Array(imageBuffer));
@@ -24,7 +24,7 @@ const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Base256 Image Test</title>
+  <title>Base437 Image Test</title>
   <script type="module">
     import { createEncoder, CoreMapping } from './base437.js';
 
@@ -42,11 +42,14 @@ const htmlContent = `
   </script>
 </head>
 <body>
+  <h1>data:image/png;base437,&hellip; Encoding</h1>
+  <p>The image below bears a src attribute encoded in base437</p>
   <img id="testImage" alt="Test Image" src="${base437Url}" width=200>
+  <p>View the page source for all the beauty</p>
 </body>
 </html>
 `.trim();
 
 // Write the index.html file
 fs.writeFileSync('index.html', htmlContent);
-console.log('Created index.html with Base256-encoded image and conversion script');
+console.log('Created index.html with Base437-encoded image and conversion script');

@@ -1,8 +1,8 @@
-# The Base256 Encoding - See Binary the Way It Wants to Be Seen
+# The Base437 Encoding - See Binary the Way It Wants to Be Seen
 
-**Base256 - Behold Binary the Way It Was Meant to Be Seen**
+**Base437 - Behold Binary the Way It Was Meant to Be Seen**
 
-> A retro aesthetic meets modern utility! Base256 brings the nostalgic charm of the original Code Page 437 (OG IBM PC) character set to life, transforming binary data into a mesmerizing display of line-drawing symbols, Greek letters, and accented glyphs—a visual ode to the early computing era. But it’s not just eye candy! For the pragmatic engineer, Base256 strips away Base64’s obfuscation, letting you inspect binary data *close to the metal*. This raw clarity accelerates debugging and deepens your grasp of the data at hand. With a tightly curated 256-character set, Base256 ensures cross-context compatibility, and the intuitive `tr` API—complete with `validate()`—empowers you to sculpt encodings for any domain.
+> A retro aesthetic meets modern utility! Base437 brings the nostalgic charm of the original Code Page 437 (OG IBM PC) character set to life, transforming binary data into a mesmerizing display of line-drawing symbols, Greek letters, and accented glyphs—a visual ode to the early computing era. But it’s not just eye candy! For the pragmatic engineer, Base437 strips away Base64’s obfuscation, letting you inspect binary data *close to the metal*. This raw clarity accelerates debugging and deepens your grasp of the data at hand. With a tightly curated 437-character set, Base437 ensures cross-context compatibility, and the intuitive `tr` API—complete with `validate()`—empowers you to sculpt encodings for any domain.
 
 ## Features
 
@@ -15,7 +15,7 @@
 
 ## Installation
 
-To get started, install Base256 via npm:
+To get started, install Base437 via npm:
 
 ```bash
 npm install base437
@@ -28,7 +28,7 @@ npm install base437
 ```javascript
 import { encode, decode } from 'base437';
 
-// Encode a string to Base256
+// Encode a string to Base437
 const text = "Hello, World!";
 const encoded = encode(text);
 console.log(encoded); // Displays with CP437 flair (e.g., line art and symbols)
@@ -40,12 +40,12 @@ console.log(decoded); // "Hello, World!"
 
 ### Using with Data URLs
 
-Base256 includes a built-in method to convert its encoded data URLs to Base64 for browser rendering.
+Base437 includes a built-in method to convert its encoded data URLs to Base64 for browser rendering.
 
 ```javascript
 import { encode, toBase64Url } from 'base437';
 
-// Encode a PNG image to Base256
+// Encode a PNG image to Base437
 const pngData = new Uint8Array([137, 80, 78, 71, ...]); // PNG binary data
 const base437Data = encode(pngData);
 const base437Url = `data:image/png;base437,${base437Data}`;
@@ -57,19 +57,19 @@ document.querySelector('img').src = base64Url; // Render the image
 
 ### CLI Usage
 
-Run Base256 directly from the command line in Node.js.
+Run Base437 directly from the command line in Node.js.
 
 ```bash
-# Encode a file to Base256
+# Encode a file to Base437
 node base437.js input.bin > output.base437
 
-# Decode a Base256 file back to binary
+# Decode a Base437 file back to binary
 node base437.js output.base437 --decode > input.bin
 ```
 
 ## Extensibility: Sculpt Your Own Encodings
 
-Base256 is your canvas for creativity! Like base64url adapts Base64 for URLs, Base256 lets you craft domain-specific encodings by remapping characters with the `tr` API. The core mapping preserves the original Code Page 437 set, but you can tweak it to avoid conflicts or enhance safety.
+Base437 is your canvas for creativity! Like base64url adapts Base64 for URLs, Base437 lets you craft domain-specific encodings by remapping characters with the `tr` API. The core mapping preserves the original Code Page 437 set, but you can tweak it to avoid conflicts or enhance safety.
 
 ### How It Works
 
@@ -81,7 +81,7 @@ The `validate()` method checks for duplicate Unicode code points, throwing an er
 
 #### Example: base437htmlAttribute
 
-Create a Base256 encoding safe for HTML attributes by remapping problematic characters:
+Create a Base437 encoding safe for HTML attributes by remapping problematic characters:
 
 ```javascript
 import { createEncoder, CoreMapping } from 'base437';
@@ -120,7 +120,7 @@ Use `CoreMapping.tr()` to adjust, validate, and pass to `createEncoder`.
 
 ## Developer Ergonomics
 
-Base256 is designed with developers in mind:
+Base437 is designed with developers in mind:
 
 - **Clear API**: Functions like `encode`, `decode`, and `toBase64Url` are intuitive and mirror Base64 conventions.
 - **Validation**: The `validate()` method ensures your custom mappings are conflict-free.
@@ -129,11 +129,11 @@ Base256 is designed with developers in mind:
 - **No Dependencies**: Pure JavaScript, keeping your project lightweight.
 
 >[!NOTE]  
-Base256 is lightweight and doesn’t rely on any external dependencies, making it a great choice for minimalistic projects and performance-sensitive applications.
+Base437 is lightweight and doesn’t rely on any external dependencies, making it a great choice for minimalistic projects and performance-sensitive applications.
 
 ## Contributing
 
-We invite you to shape Base256’s future! Share your custom encodings or enhancements via pull requests. Add reusable mappings to the `mappings/` directory!
+We invite you to shape Base437’s future! Share your custom encodings or enhancements via pull requests. Add reusable mappings to the `mappings/` directory!
 
 > **Note**  
 > Have a cool encoding like `base437url` or `base437json`? Open a PR—we’d love to feature it!

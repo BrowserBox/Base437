@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // base437.js
-// Base256 - See binary the way it wants to be seen
+// Base437 - See binary the way it wants to be seen
 // Using Code Page 437 Unicode mappings
 
 //
@@ -215,10 +215,10 @@ const BufferClass = typeof globalThis.Buffer !== 'undefined' ? globalThis.Buffer
   }
 };
 
-// --- Core Base256 Encoding Logic ---
+// --- Core Base437 Encoding Logic ---
 
 /**
- * Creates a Base256 encoder/decoder with a custom mapping.
+ * Creates a Base437 encoder/decoder with a custom mapping.
  * @param {Object<string, string>} cp437ToUnicode - Mapping of byte values (0-255) to Unicode code points (e.g., "U+2060").
  * @returns {{ encode: Function, decode: Function }} - An object with encode and decode functions.
  */
@@ -290,9 +290,9 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
 
   return {
     /**
-     * Encodes data to a Base256 string using the provided mapping.
+     * Encodes data to a Base437 string using the provided mapping.
      * @param {ArrayBuffer|Uint8Array|Buffer|Uint8ClampedArray|string} input - Input data to encode.
-     * @returns {string} Base256-encoded string.
+     * @returns {string} Base437-encoded string.
      */
     encode(input) {
       const bytes = inputToBytes(input);
@@ -308,8 +308,8 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
     },
 
     /**
-     * Decodes a Base256 string back to bytes using the provided mapping.
-     * @param {string} input - Base256-encoded string.
+     * Decodes a Base437 string back to bytes using the provided mapping.
+     * @param {string} input - Base437-encoded string.
      * @param {string} [outputType='uint8array'] - Desired output type: 'uint8array', 'arraybuffer', 'buffer', 'string', 'array'.
      * @returns {Uint8Array|ArrayBuffer|Buffer|string|number[]} Decoded data in the specified format.
      */
@@ -324,7 +324,7 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
         const codePoint = char.codePointAt(0);
         const byte = codePointToByteMap[codePoint];
         if (byte === undefined) {
-          throw new Error(`Invalid Base256 character at position ${i}: ${input[i]}`);
+          throw new Error(`Invalid Base437 character at position ${i}: ${input[i]}`);
         }
         bytes[i] = byte;
         i++;
@@ -337,10 +337,10 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
     // --- Extensions ---
 
     /**
-     * Converts a Base256-encoded data URL to a Base64-encoded data URL for use in HTML.
-     * This is an example of a domain-specific extension that converts Base256 data to another format.
+     * Converts a Base437-encoded data URL to a Base64-encoded data URL for use in HTML.
+     * This is an example of a domain-specific extension that converts Base437 data to another format.
      * See the README for how to create your own domain-specific extensions.
-     * @param {string} dataUrl - The Base256 data URL (e.g., "data:image/png;base437,éPNG...").
+     * @param {string} dataUrl - The Base437 data URL (e.g., "data:image/png;base437,éPNG...").
      * @returns {string} The Base64 data URL (e.g., "data:image/png;base64,iVBORw0KGgo...").
      */
     toBase64Url(dataUrl) {
@@ -350,7 +350,7 @@ export function createEncoder(cp437ToUnicode = CoreMapping) {
 
       const match = dataUrl.match(/^data:([^;]+);base437,(.*)$/);
       if (!match) {
-        throw new Error('Input must be a Base256-encoded data URL');
+        throw new Error('Input must be a Base437-encoded data URL');
       }
 
       const mimeType = match[1];

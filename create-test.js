@@ -49,7 +49,12 @@ const htmlContent = `
     }
     .mapping-section {
       overflow-x: auto; /* Enable horizontal scrolling */
+      & h2 {
+        position: sticky;
+        left: 0;
+      }
     }
+
     .mapping-table {
       display: grid;
       grid-template-columns: repeat(16, 1fr);
@@ -101,6 +106,10 @@ const htmlContent = `
       margin-top: 10px;
     }
     dialog {
+      margin: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       border: 2px solid #ddd;
       border-radius: 8px;
       padding: 20px;

@@ -112,7 +112,7 @@ function editMapping(byte, cell) {
     }
   };
 
-  dialog.showModal();
+  dialog.show();
 }
 
 // Handle input type switching

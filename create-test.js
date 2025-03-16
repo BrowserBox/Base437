@@ -1,55 +1,137 @@
 #!/usr/bin/env node
 // create-test.js
-// Creates an index.html file with a Base437-encoded image and converts it to Base64
+// Generates a styled Base437 demo page with interactive elements
 
 import { createEncoder, CoreMapping } from './base437.js';
 import fs from 'fs';
 
-if (process.argv.length < 3) {
-  console.error('Usage: node create-test.js <path-to-png-file>');
-  process.exit(1);
+const imagePath = process.argv[2];
+let base437Url = '';
+if (imagePath) {
+  const imageBuffer = fs.readFileSync(imagePath);
+  const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate();
+  const htmlEncoder = createEncoder(htmlSafeMapping);
+  const base437Data = htmlEncoder.encode(new Uint8Array(imageBuffer));
+  base437Url = `data:image/png;base437,${base437Data}`;
 }
 
-const imagePath = process.argv[2];
-const imageBuffer = fs.readFileSync(imagePath);
-
-// Encode the image to Base437 with a remapped quotation mark for HTML safety
-const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate(); // Remap " for HTML safety
-const htmlEncoder = createEncoder(htmlSafeMapping);
-const base437Data = htmlEncoder.encode(new Uint8Array(imageBuffer));
-const base437Url = `data:image/png;base437,${base437Data}`;
-
-// Generate index.html content with inline script
+// HTML content with inline CSS and structure
 const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Base437 Image Test</title>
-  <script type="module">
-    import { createEncoder, CoreMapping } from './base437.js';
-
-    // Create custom mapping and encoder
-    const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate();
-    const htmlEncoder = createEncoder(htmlSafeMapping);
-
-    window.onload = () => {
-      const img = document.getElementById('testImage');
-      const base437Src = img.getAttribute('src');
-      const base64Src = htmlEncoder.toBase64Url(base437Src);
-      img.setAttribute('src', base64Src);
-      console.log('Converted to Base64:', base64Src);
-    };
-  </script>
+  <meta charset="UTF-8">
+  <title>Base437 Interactive Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 300px;
+    }
+    .mapping-table {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 2px;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+    .mapping-cell {
+      border: 1px solid #ddd;
+      padding: 5px;
+      text-align: center;
+      cursor: pointer;
+      background: #fff;
+    }
+    .mapping-cell:hover {
+      background: #f5f5f5;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      box-sizing: border-box;
+      font-family: monospace;
+    }
+    button {
+      padding: 8px 16px;
+      margin: 5px 0;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    select {
+      padding: 8px;
+      margin: 5px 0;
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 10px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-  <h1>data:image/png;base437,&hellip; Encoding</h1>
-  <p>The image below bears a src attribute encoded in base437</p>
-  <img id="testImage" alt="Test Image" src="${base437Url}" width=200>
-  <p>View the page source for all the beauty</p>
+  <h1>Base437 Interactive Demo</h1>
+  <div class="container">
+    <div class="section">
+      <h2>Mapping Table (Edit to Customize)</h2>
+      <div id="mappingTable" class="mapping-table"></div>
+    </div>
+    <div class="section">
+      <h2>Encode/Decode</h2>
+      <label><input type="radio" name="inputType" value="text" checked> Text</label>
+      <label><input type="radio" name="inputType" value="file"> File</label>
+      <textarea id="inputText" rows="4" placeholder="Enter text to encode..."></textarea>
+      <input type="file" id="inputFile" style="display: none;">
+      <button id="encodeBtn">Encode to Base437</button>
+      <textarea id="outputText" rows="4" placeholder="Base437 output will appear here..."></textarea>
+      <button id="decodeBtn">Decode from Base437</button>
+      <select id="outputType">
+        <option value="string">String</option>
+        <option value="file">File</option>
+      </select>
+      <a id="downloadLink" download="decoded_output">Download Decoded File</a>
+    </div>
+    ${base437Url ? `
+    <div class="section">
+      <h2>Demo Image (Base437 Encoded)</h2>
+      <p>This image is loaded from a Base437 data URL and converted to Base64.</p>
+      <img id="demoImage" src="${base437Url}" alt="Demo Image" width="200">
+    </div>` : ''}
+  </div>
+  <script type="module" src="demo.js"></script>
 </body>
 </html>
 `.trim();
 
 // Write the index.html file
 fs.writeFileSync('index.html', htmlContent);
-console.log('Created index.html with Base437-encoded image and conversion script');
+console.log('Created index.html with Base437 interactive demo');

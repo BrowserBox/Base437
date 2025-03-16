@@ -1,0 +1,8 @@
+- point is aesthetics, it looks the way it's supposed to look
+- point is also it's valid unicode and can be put anywhere (ie, not ascii control charas that will garble output and terminals)
+- point is you can actually see the content as if you were really examining the file. Easily grep for strings, or visually scan for them, unlike in base64. 
+- surfaces binary into a consistent, reliable visual language, aiding quick analysis and inspection
+
+
+
+

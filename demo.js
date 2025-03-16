@@ -60,9 +60,9 @@ function editMapping(byte, cell) {
   }
   byteInfo.textContent = byteDisplay;
 
-  // Always display OG and current characters
-  originalMapping.innerHTML = `${String.fromCodePoint(originalCodePoint)} <span>OG (${originalUnicode})</span>`;
-  currentChar.innerHTML = `${String.fromCodePoint(codePoint)} <span>Current (${unicode})</span>`;
+  // Always display OG and current characters in the table
+  originalMapping.innerHTML = `<div class="char-display og">${String.fromCodePoint(originalCodePoint)} <span>(${originalUnicode})</span></div>`;
+  currentChar.innerHTML = `<div class="char-display current">${String.fromCodePoint(codePoint)} <span>(${unicode})</span></div>`;
 
   // Set initial input value
   newUnicodeInput.value = unicode;
@@ -85,8 +85,8 @@ function editMapping(byte, cell) {
         // Create a new mapping with the updated value
         const newMapping = currentMapping.tr(byte, newUnicode).validate();
         // If validation succeeds, update the current mapping and push to stack
-        mappingStack.push(newMapping);
         currentMapping = newMapping;
+        mappingStack.push(newMapping);
         encoder = createEncoder(currentMapping);
         const newCodePoint = parseInt(newUnicode.slice(2), 16);
         // Update the cell display and title
@@ -95,8 +95,7 @@ function editMapping(byte, cell) {
         dialog.close();
       } catch (e) {
         // If validation fails, revert to the previous good mapping
-        if (mappingStack.length > 1) {
-          mappingStack.pop(); // Remove the failed attempt
+        if (mappingStack.length > 0) {
           currentMapping = mappingStack[mappingStack.length - 1];
           encoder = createEncoder(currentMapping);
         }

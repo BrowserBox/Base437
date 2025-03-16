@@ -21,21 +21,52 @@ function initMappingTable() {
   }
 }
 
-// Edit a mapping interactively
-function editMapping(byte, cell) {
-  const newUnicode = prompt(`Enter new Unicode for byte ${byte} (e.g., U+2060):`, currentMapping[byte]);
-  if (newUnicode && newUnicode.match(/^U\+[0-9A-F]{4}$/i)) {
-    try {
-      currentMapping = currentMapping.tr(byte, newUnicode).validate();
-      encoder = createEncoder(currentMapping);
-      cell.textContent = String.fromCodePoint(parseInt(newUnicode.slice(2), 16));
-      cell.title = `Byte ${byte} -> ${newUnicode}`;
-    } catch (e) {
-      alert(`Error: ${e.message}`);
-    }
-  } else if (newUnicode) {
-    alert('Invalid Unicode format. Use "U+XXXX" where XXXX is a 4-digit hex code.');
+// Parse Unicode input (supports U+XXXX format only for now)
+function parseUnicodeInput(input) {
+  if (input && input.match(/^U\+[0-9A-F]{4}$/i)) {
+    return input.toUpperCase();
   }
+  return null;
+}
+
+// Edit a mapping using a dialog with metadata
+function editMapping(byte, cell) {
+  const dialog = document.getElementById('editMappingDialog');
+  const byteInfo = document.getElementById('byteInfo');
+  const originalMapping = document.getElementById('originalMapping');
+  const currentChar = document.getElementById('currentChar');
+  const newUnicodeInput = document.getElementById('newUnicode');
+  const saveBtn = document.getElementById('saveMappingBtn');
+
+  const unicode = currentMapping[byte];
+  const codePoint = parseInt(unicode.slice(2), 16);
+  const originalUnicode = CoreMapping[byte];
+  const originalCodePoint = parseInt(originalUnicode.slice(2), 16);
+
+  byteInfo.textContent = `Byte: ${byte} (0x${parseInt(byte).toString(16).padStart(2, '0').toUpperCase()})`;
+  originalMapping.textContent = `OG Mapping: ${String.fromCodePoint(originalCodePoint)} (${originalUnicode})`;
+  currentChar.textContent = `Current Character: ${String.fromCodePoint(codePoint)} (${unicode})`;
+  newUnicodeInput.value = unicode;
+
+  saveBtn.onclick = () => {
+    const newUnicode = parseUnicodeInput(newUnicodeInput.value);
+    if (newUnicode) {
+      try {
+        currentMapping = currentMapping.tr(byte, newUnicode).validate();
+        encoder = createEncoder(currentMapping);
+        const newCodePoint = parseInt(newUnicode.slice(2), 16);
+        cell.textContent = String.fromCodePoint(newCodePoint);
+        cell.title = `Byte ${byte} -> ${newUnicode}`;
+        dialog.close();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    } else {
+      alert('Invalid Unicode format. Use "U+XXXX" where XXXX is a 4-digit hex code.');
+    }
+  };
+
+  dialog.showModal();
 }
 
 // Handle input type switching

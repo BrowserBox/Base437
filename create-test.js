@@ -96,6 +96,50 @@ const htmlContent = `
       height: auto;
       margin-top: 10px;
     }
+    dialog {
+      border: 2px solid #000;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fff;
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+    }
+    dialog h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    dialog label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    dialog input {
+      width: 100%;
+      padding: 5px;
+      font-family: monospace;
+    }
+    dialog .dialog-buttons {
+      margin-top: 20px;
+      text-align: right;
+    }
+    dialog button {
+      padding: 8px 16px;
+      margin-left: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    dialog button:hover {
+      background: #0056b3;
+    }
+    dialog button.cancel {
+      background: #dc3545;
+    }
+    dialog button.cancel:hover {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -127,6 +171,18 @@ const htmlContent = `
       <img id="demoImage" src="${base437Url}" alt="Demo Image" width="200">
     </div>` : ''}
   </div>
+  <dialog id="editMappingDialog">
+    <h3>Edit Mapping</h3>
+    <p id="byteInfo"></p>
+    <p id="originalMapping"></p>
+    <p id="currentChar"></p>
+    <label for="newUnicode">New Unicode Value:</label>
+    <input type="text" id="newUnicode" placeholder="e.g., U+2060">
+    <div class="dialog-buttons">
+      <button class="cancel" onclick="document.getElementById('editMappingDialog').close()">Cancel</button>
+      <button id="saveMappingBtn">Save</button>
+    </div>
+  </dialog>
   <script type="module" src="demo.js"></script>
 </body>
 </html>

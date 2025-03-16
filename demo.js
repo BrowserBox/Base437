@@ -7,8 +7,80 @@ let currentMapping = CoreMapping;
 let encoder = createEncoder(currentMapping);
 let mappingStack = [currentMapping]; // Stack to store previous mappings
 
-// Initialize the mapping table
+// Add at the top of demo.js, after imports
+const mappingFileInput = document.createElement('input');
+mappingFileInput.type = 'file';
+mappingFileInput.accept = '.json';
+mappingFileInput.style.marginBottom = '10px';
+mappingFileInput.addEventListener('change', handleMappingImport);
+
+const saveMappingBtn = document.createElement('button');
+saveMappingBtn.textContent = 'Save Mapping as JSON';
+saveMappingBtn.style.marginLeft = '10px';
+saveMappingBtn.addEventListener('click', handleMappingExport);
+
+function handleMappingImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const importedMapping = JSON.parse(reader.result);
+      // Validate the imported mapping
+      const newMapping = Object.assign({}, CoreMapping, importedMapping).validate();
+      currentMapping = newMapping;
+      mappingStack.push(newMapping);
+      encoder = createEncoder(currentMapping);
+      // Refresh the table
+      const table = document.getElementById('mappingTable');
+      table.innerHTML = '';
+      initMappingTable();
+      alert('Mapping imported successfully!');
+    } catch (e) {
+      alert(`Import Error: ${e.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function handleMappingExport() {
+  const mappingJson = JSON.stringify(currentMapping, null, 2);
+  if ('showSaveFilePicker' in window) {
+    // Use File System Access API if available
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'base437_mapping.json',
+        types: [{
+          description: 'JSON File',
+          accept: { 'application/json': ['.json'] },
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(mappingJson);
+      await writable.close();
+      alert('Mapping saved successfully!');
+    } catch (e) {
+      if (e.name !== 'AbortError') alert(`Save Error: ${e.message}`);
+    }
+  } else {
+    // Fallback to download link
+    const blob = new Blob([mappingJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'base437_mapping.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Modify initMappingTable to add the file controls
 function initMappingTable() {
+  const tableContainer = document.getElementById('mappingTable').parentElement;
+  const fileControls = document.createElement('div');
+  fileControls.appendChild(mappingFileInput);
+  fileControls.appendChild(saveMappingBtn);
+  tableContainer.insertBefore(fileControls, document.getElementById('mappingTable'));
   const table = document.getElementById('mappingTable');
   for (let i = 0; i < 256; i++) {
     const cell = document.createElement('div');

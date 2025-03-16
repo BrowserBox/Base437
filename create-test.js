@@ -47,12 +47,16 @@ const htmlContent = `
       flex: 1;
       min-width: 300px;
     }
+    .mapping-section {
+      overflow-x: auto; /* Enable horizontal scrolling */
+    }
     .mapping-table {
       display: grid;
       grid-template-columns: repeat(16, 1fr);
       gap: 2px;
       margin: 10px 0;
       font-size: 12px;
+      min-width: 600px; /* Ensure table doesn't shrink too much */
     }
     .mapping-cell {
       border: 1px solid #ddd;
@@ -97,29 +101,76 @@ const htmlContent = `
       margin-top: 10px;
     }
     dialog {
-      border: 2px solid #000;
+      border: 2px solid #ddd;
       border-radius: 8px;
       padding: 20px;
       background: #fff;
       font-family: Arial, sans-serif;
       max-width: 400px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     dialog h3 {
-      margin-top: 0;
+      margin: 0 0 15px;
       color: #333;
+      font-size: 18px;
+      text-align: center;
+    }
+    dialog .metadata {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    dialog .metadata div {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    dialog .metadata .byte-info {
+      font-weight: bold;
+      color: #555;
+    }
+    dialog .metadata .char-display {
+      font-size: 16px;
+      font-weight: bold;
+      color: #007bff;
+    }
+    dialog .metadata .char-display span {
+      font-weight: normal;
+      color: #666;
+      font-size: 12px;
+    }
+    dialog .metadata .char-display.og {
+      color: #28a745;
+    }
+    dialog .input-section {
+      margin-bottom: 15px;
     }
     dialog label {
       display: block;
-      margin: 10px 0 5px;
+      margin-bottom: 5px;
       font-weight: bold;
+      color: #333;
     }
     dialog input {
       width: 100%;
       padding: 5px;
       font-family: monospace;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    dialog .live-preview {
+      margin-top: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+    dialog .live-preview span {
+      font-size: 16px;
+      font-weight: bold;
+      color: #ff6f61;
     }
     dialog .dialog-buttons {
-      margin-top: 20px;
       text-align: right;
     }
     dialog button {
@@ -145,7 +196,7 @@ const htmlContent = `
 <body>
   <h1>Base437 Interactive Demo</h1>
   <div class="container">
-    <div class="section">
+    <div class="section mapping-section">
       <h2>Mapping Table (Edit to Customize)</h2>
       <div id="mappingTable" class="mapping-table"></div>
     </div>
@@ -173,11 +224,18 @@ const htmlContent = `
   </div>
   <dialog id="editMappingDialog">
     <h3>Edit Mapping</h3>
-    <p id="byteInfo"></p>
-    <p id="originalMapping"></p>
-    <p id="currentChar"></p>
-    <label for="newUnicode">New Unicode Value:</label>
-    <input type="text" id="newUnicode" placeholder="e.g., U+2060">
+    <div class="metadata">
+      <div class="byte-info" id="byteInfo"></div>
+      <div>
+        <div class="char-display og" id="originalMapping"></div>
+        <div class="char-display" id="currentChar"></div>
+      </div>
+    </div>
+    <div class="input-section">
+      <label for="newUnicode">New Unicode Value:</label>
+      <input type="text" id="newUnicode" placeholder="e.g., U+2060">
+      <div class="live-preview" id="livePreview">Live Preview: <span>-</span></div>
+    </div>
     <div class="dialog-buttons">
       <button class="cancel" onclick="document.getElementById('editMappingDialog').close()">Cancel</button>
       <button id="saveMappingBtn">Save</button>

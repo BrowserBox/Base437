@@ -29,24 +29,46 @@ function parseUnicodeInput(input) {
   return null;
 }
 
-// Edit a mapping using a dialog with metadata
+// Edit a mapping using a dialog with enhanced UX
 function editMapping(byte, cell) {
   const dialog = document.getElementById('editMappingDialog');
   const byteInfo = document.getElementById('byteInfo');
   const originalMapping = document.getElementById('originalMapping');
   const currentChar = document.getElementById('currentChar');
   const newUnicodeInput = document.getElementById('newUnicode');
+  const livePreview = document.getElementById('livePreview').querySelector('span');
   const saveBtn = document.getElementById('saveMappingBtn');
 
   const unicode = currentMapping[byte];
   const codePoint = parseInt(unicode.slice(2), 16);
   const originalUnicode = CoreMapping[byte];
   const originalCodePoint = parseInt(originalUnicode.slice(2), 16);
+  const byteNum = parseInt(byte);
 
-  byteInfo.textContent = `Byte: ${byte} (0x${parseInt(byte).toString(16).padStart(2, '0').toUpperCase()})`;
-  originalMapping.textContent = `OG Mapping: ${String.fromCodePoint(originalCodePoint)} (${originalUnicode})`;
-  currentChar.textContent = `Current Character: ${String.fromCodePoint(codePoint)} (${unicode})`;
+  // Display byte info with binary character (if displayable: ASCII 32–126)
+  let byteDisplay = `Byte ${byte} (0x${byteNum.toString(16).padStart(2, '0').toUpperCase()})`;
+  if (byteNum >= 32 && byteNum <= 126) {
+    byteDisplay += ` [${String.fromCharCode(byteNum)}]`;
+  }
+  byteInfo.textContent = byteDisplay;
+
+  // Always display OG and current characters
+  originalMapping.innerHTML = `${String.fromCodePoint(originalCodePoint)} <span>OG (${originalUnicode})</span>`;
+  currentChar.innerHTML = `${String.fromCodePoint(codePoint)} <span>Current (${unicode})</span>`;
+
+  // Set initial input value
   newUnicodeInput.value = unicode;
+
+  // Live preview on input
+  newUnicodeInput.oninput = () => {
+    const newUnicode = parseUnicodeInput(newUnicodeInput.value);
+    if (newUnicode) {
+      const newCodePoint = parseInt(newUnicode.slice(2), 16);
+      livePreview.textContent = String.fromCodePoint(newCodePoint);
+    } else {
+      livePreview.textContent = '-';
+    }
+  };
 
   saveBtn.onclick = () => {
     const newUnicode = parseUnicodeInput(newUnicodeInput.value);

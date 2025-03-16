@@ -238,7 +238,7 @@ const htmlContent = `
     ${base437Url ? `
     <div class="section">
       <h2>Demo Image (Base437 Encoded)</h2>
-      <p>This image is loaded from a Base437 data URL and converted to Base64.</p>
+      <p>This image is loaded from a Base437 data URL and converted to Base64, using an HTML attribute safe variant of the CoreMapping.</p>
       <img id="demoImage" src="${base437Url}" alt="Demo Image" width="200">
     </div>` : ''}
   </div>

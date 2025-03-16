@@ -42,7 +42,7 @@ function editMapping(byte, cell) {
   const dialog = document.getElementById('editMappingDialog');
   const byteInfo = document.getElementById('byteInfo');
   const originalMapping = document.getElementById('originalMapping');
-  const currentChar = document.getElementById('currentChar');
+  const currentCharEl = document.getElementById('currentChar');
   const newUnicodeInput = document.getElementById('newUnicode');
   const livePreview = document.getElementById('livePreview').querySelector('span');
   const saveBtn = document.getElementById('saveMappingBtn');
@@ -52,6 +52,7 @@ function editMapping(byte, cell) {
   const originalUnicode = CoreMapping[byte];
   const originalCodePoint = parseInt(originalUnicode.slice(2), 16);
   const byteNum = parseInt(byte);
+  const currentChar = String.fromCodePoint(codePoint);
 
   // Display byte info with binary character (if displayable: ASCII 32–126)
   let byteValue = String.fromCharCode(1);
@@ -63,7 +64,7 @@ function editMapping(byte, cell) {
 
   // Always display OG and current characters in the table
   originalMapping.innerHTML = `<div class="char-display og">${String.fromCodePoint(originalCodePoint)} <span>(${originalUnicode})</span></div>`;
-  currentChar.innerHTML = `<div class="char-display current">${String.fromCodePoint(codePoint)} <span>(${unicode})</span></div>`;
+  currentCharEl.innerHTML = `<div class="char-display current">${currentChar} <span>(${unicode})</span></div>`;
 
   // Set initial input value
   newUnicodeInput.value = unicode;
@@ -84,7 +85,7 @@ function editMapping(byte, cell) {
     if (newUnicode) {
       try {
         // Create a new mapping with the updated value
-        const newMapping = currentMapping.tr(byte, newUnicode).validate();
+        const newMapping = currentMapping.tr(currentChar, newUnicode).validate();
         // If validation succeeds, update the current mapping and push to stack
         currentMapping = newMapping;
         mappingStack.push(newMapping);
@@ -94,6 +95,7 @@ function editMapping(byte, cell) {
         cell.textContent = String.fromCodePoint(newCodePoint);
         cell.title = `${byte} -> ${newUnicode}`;
         dialog.close();
+        console.log(mappingStack, {byte,newUnicode});
       } catch (e) {
         // If validation fails, revert to the previous good mapping
         if (mappingStack.length > 0) {
@@ -113,6 +115,7 @@ function editMapping(byte, cell) {
   };
 
   dialog.show();
+  newUnicodeInput.oninput();
 }
 
 // Handle input type switching

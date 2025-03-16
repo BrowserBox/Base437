@@ -5,6 +5,7 @@ import { createEncoder, CoreMapping } from './base437.js';
 
 let currentMapping = CoreMapping;
 let encoder = createEncoder(currentMapping);
+let mappingStack = [currentMapping]; // Stack to store previous mappings
 
 // Initialize the mapping table
 function initMappingTable() {
@@ -16,7 +17,14 @@ function initMappingTable() {
     const unicode = currentMapping[byte];
     cell.textContent = String.fromCodePoint(parseInt(unicode.slice(2), 16));
     cell.title = `Byte ${byte} -> ${unicode}`;
-    cell.addEventListener('click', () => editMapping(byte, cell));
+    cell.addEventListener('click', (e) => {
+      // Close any open dialog and open a new one for the clicked cell
+      const dialog = document.getElementById('editMappingDialog');
+      if (dialog.open) {
+        dialog.close();
+      }
+      editMapping(byte, cell);
+    });
     table.appendChild(cell);
   }
 }
@@ -74,17 +82,33 @@ function editMapping(byte, cell) {
     const newUnicode = parseUnicodeInput(newUnicodeInput.value);
     if (newUnicode) {
       try {
-        currentMapping = currentMapping.tr(byte, newUnicode).validate();
+        // Create a new mapping with the updated value
+        const newMapping = currentMapping.tr(byte, newUnicode).validate();
+        // If validation succeeds, update the current mapping and push to stack
+        mappingStack.push(newMapping);
+        currentMapping = newMapping;
         encoder = createEncoder(currentMapping);
         const newCodePoint = parseInt(newUnicode.slice(2), 16);
+        // Update the cell display and title
         cell.textContent = String.fromCodePoint(newCodePoint);
         cell.title = `Byte ${byte} -> ${newUnicode}`;
         dialog.close();
       } catch (e) {
-        alert(`Error: ${e.message}`);
+        // If validation fails, revert to the previous good mapping
+        if (mappingStack.length > 1) {
+          mappingStack.pop(); // Remove the failed attempt
+          currentMapping = mappingStack[mappingStack.length - 1];
+          encoder = createEncoder(currentMapping);
+        }
+        // Show a styled alert with Unicode warning symbol and formatted error
+        alert(
+          `⚠️ Validation Error\n\n\t${e.message}\n\nReverted to previous mapping.`
+        );
       }
     } else {
-      alert('Invalid Unicode format. Use "U+XXXX" where XXXX is a 4-digit hex code.');
+      alert(
+        `⚠️ Input Error\n\n\tInvalid Unicode format.\n\tUse "U+XXXX" where XXXX is a 4-digit hex code.`
+      );
     }
   };
 

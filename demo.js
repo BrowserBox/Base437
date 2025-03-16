@@ -16,7 +16,7 @@ function initMappingTable() {
     const byte = i.toString();
     const unicode = currentMapping[byte];
     cell.textContent = String.fromCodePoint(parseInt(unicode.slice(2), 16));
-    cell.title = `Byte ${byte} -> ${unicode}`;
+    cell.title = `${byte} -> ${unicode}`;
     cell.addEventListener('click', (e) => {
       // Close any open dialog and open a new one for the clicked cell
       const dialog = document.getElementById('editMappingDialog');
@@ -54,11 +54,12 @@ function editMapping(byte, cell) {
   const byteNum = parseInt(byte);
 
   // Display byte info with binary character (if displayable: ASCII 32–126)
-  let byteDisplay = `Byte ${byte} (0x${byteNum.toString(16).padStart(2, '0').toUpperCase()})`;
+  let byteValue = String.fromCharCode(1);
   if (byteNum >= 32 && byteNum <= 126) {
-    byteDisplay += ` [${String.fromCharCode(byteNum)}]`;
+    byteValue = `${String.fromCharCode(byteNum)}`;
   }
-  byteInfo.textContent = byteDisplay;
+  let byteDisplay = `<div class=char-display>${byteValue} <span>${byteNum} (0x${byteNum.toString(16).padStart(2, '0').toUpperCase()})</span></div>`;
+  byteInfo.innerHTML = byteDisplay;
 
   // Always display OG and current characters in the table
   originalMapping.innerHTML = `<div class="char-display og">${String.fromCodePoint(originalCodePoint)} <span>(${originalUnicode})</span></div>`;
@@ -91,7 +92,7 @@ function editMapping(byte, cell) {
         const newCodePoint = parseInt(newUnicode.slice(2), 16);
         // Update the cell display and title
         cell.textContent = String.fromCodePoint(newCodePoint);
-        cell.title = `Byte ${byte} -> ${newUnicode}`;
+        cell.title = `${byte} -> ${newUnicode}`;
         dialog.close();
       } catch (e) {
         // If validation fails, revert to the previous good mapping

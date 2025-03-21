@@ -43,13 +43,14 @@
     .mapping-table {
       display: grid;
       grid-template-columns: repeat(16, 1fr);
-      gap: 2px;
+      gap: 0;
       margin: 10px 0;
       font-size: 12px;
       min-width: 600px; /* Ensure table doesn't shrink too much */
     }
     .mapping-cell {
-      border: 1px solid #ddd;
+      aspect-ratio: 1/1;
+      line-height: calc(1em + 12px);
       padding: 5px;
       text-align: center;
       cursor: pointer;

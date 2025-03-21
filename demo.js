@@ -5,9 +5,82 @@ import { createEncoder, CoreMapping } from './base437.js';
 
 let currentMapping = CoreMapping;
 let encoder = createEncoder(currentMapping);
+let mappingStack = [currentMapping]; // Stack to store previous mappings
 
-// Initialize the mapping table
+// Add at the top of demo.js, after imports
+const mappingFileInput = document.createElement('input');
+mappingFileInput.type = 'file';
+mappingFileInput.accept = '.json';
+mappingFileInput.style.marginBottom = '10px';
+mappingFileInput.addEventListener('change', handleMappingImport);
+
+const saveMappingBtn = document.createElement('button');
+saveMappingBtn.textContent = 'Save Mapping as JSON';
+saveMappingBtn.style.marginLeft = '10px';
+saveMappingBtn.addEventListener('click', handleMappingExport);
+
+function handleMappingImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const importedMapping = JSON.parse(reader.result);
+      // Validate the imported mapping
+      const newMapping = Object.assign({}, CoreMapping, importedMapping).validate();
+      currentMapping = newMapping;
+      mappingStack.push(newMapping);
+      encoder = createEncoder(currentMapping);
+      // Refresh the table
+      const table = document.getElementById('mappingTable');
+      table.innerHTML = '';
+      initMappingTable();
+      alert('Mapping imported successfully!');
+    } catch (e) {
+      alert(`Import Error: ${e.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function handleMappingExport() {
+  const mappingJson = JSON.stringify(currentMapping, null, 2);
+  if ('showSaveFilePicker' in window) {
+    // Use File System Access API if available
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'base437_mapping.json',
+        types: [{
+          description: 'JSON File',
+          accept: { 'application/json': ['.json'] },
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(mappingJson);
+      await writable.close();
+      alert('Mapping saved successfully!');
+    } catch (e) {
+      if (e.name !== 'AbortError') alert(`Save Error: ${e.message}`);
+    }
+  } else {
+    // Fallback to download link
+    const blob = new Blob([mappingJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'base437_mapping.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Modify initMappingTable to add the file controls
 function initMappingTable() {
+  const tableContainer = document.getElementById('mappingTable').parentElement;
+  const fileControls = document.createElement('div');
+  fileControls.appendChild(mappingFileInput);
+  fileControls.appendChild(saveMappingBtn);
+  tableContainer.insertBefore(fileControls, document.getElementById('mappingTable'));
   const table = document.getElementById('mappingTable');
   for (let i = 0; i < 256; i++) {
     const cell = document.createElement('div');
@@ -15,27 +88,106 @@ function initMappingTable() {
     const byte = i.toString();
     const unicode = currentMapping[byte];
     cell.textContent = String.fromCodePoint(parseInt(unicode.slice(2), 16));
-    cell.title = `Byte ${byte} -> ${unicode}`;
-    cell.addEventListener('click', () => editMapping(byte, cell));
+    cell.title = `${byte} -> ${unicode}`;
+    cell.addEventListener('click', (e) => {
+      // Close any open dialog and open a new one for the clicked cell
+      const dialog = document.getElementById('editMappingDialog');
+      if (dialog.open) {
+        dialog.close();
+      }
+      editMapping(byte, cell);
+    });
     table.appendChild(cell);
   }
 }
 
-// Edit a mapping interactively
-function editMapping(byte, cell) {
-  const newUnicode = prompt(`Enter new Unicode for byte ${byte} (e.g., U+2060):`, currentMapping[byte]);
-  if (newUnicode && newUnicode.match(/^U\+[0-9A-F]{4}$/i)) {
-    try {
-      currentMapping = currentMapping.tr(byte, newUnicode).validate();
-      encoder = createEncoder(currentMapping);
-      cell.textContent = String.fromCodePoint(parseInt(newUnicode.slice(2), 16));
-      cell.title = `Byte ${byte} -> ${newUnicode}`;
-    } catch (e) {
-      alert(`Error: ${e.message}`);
-    }
-  } else if (newUnicode) {
-    alert('Invalid Unicode format. Use "U+XXXX" where XXXX is a 4-digit hex code.');
+// Parse Unicode input (supports U+XXXX format only for now)
+function parseUnicodeInput(input) {
+  if (input && input.match(/^U\+[0-9A-F]{4}$/i)) {
+    return input.toUpperCase();
   }
+  return null;
+}
+
+// Edit a mapping using a dialog with enhanced UX
+function editMapping(byte, cell) {
+  const dialog = document.getElementById('editMappingDialog');
+  const byteInfo = document.getElementById('byteInfo');
+  const originalMapping = document.getElementById('originalMapping');
+  const currentCharEl = document.getElementById('currentChar');
+  const newUnicodeInput = document.getElementById('newUnicode');
+  const livePreview = document.getElementById('livePreview').querySelector('span');
+  const saveBtn = document.getElementById('saveMappingBtn');
+
+  const unicode = currentMapping[byte];
+  const codePoint = parseInt(unicode.slice(2), 16);
+  const originalUnicode = CoreMapping[byte];
+  const originalCodePoint = parseInt(originalUnicode.slice(2), 16);
+  const byteNum = parseInt(byte);
+  const currentChar = String.fromCodePoint(codePoint);
+
+  // Display byte info with binary character (if displayable: ASCII 32–126)
+  let byteValue = String.fromCharCode(1);
+  if (byteNum >= 32 && byteNum <= 126) {
+    byteValue = `${String.fromCharCode(byteNum)}`;
+  }
+  let byteDisplay = `<div class=char-display>${byteValue} <span>${byteNum} (0x${byteNum.toString(16).padStart(2, '0').toUpperCase()})</span></div>`;
+  byteInfo.innerHTML = byteDisplay;
+
+  // Always display OG and current characters in the table
+  originalMapping.innerHTML = `<div class="char-display og">${String.fromCodePoint(originalCodePoint)} <span>(${originalUnicode})</span></div>`;
+  currentCharEl.innerHTML = `<div class="char-display current">${currentChar} <span>(${unicode})</span></div>`;
+
+  // Set initial input value
+  newUnicodeInput.value = unicode;
+
+  // Live preview on input
+  newUnicodeInput.oninput = () => {
+    const newUnicode = parseUnicodeInput(newUnicodeInput.value);
+    if (newUnicode) {
+      const newCodePoint = parseInt(newUnicode.slice(2), 16);
+      livePreview.textContent = String.fromCodePoint(newCodePoint);
+    } else {
+      livePreview.textContent = '-';
+    }
+  };
+
+  saveBtn.onclick = () => {
+    const newUnicode = parseUnicodeInput(newUnicodeInput.value);
+    if (newUnicode) {
+      try {
+        // Create a new mapping with the updated value
+        const newMapping = currentMapping.tr(currentChar, newUnicode).validate();
+        // If validation succeeds, update the current mapping and push to stack
+        currentMapping = newMapping;
+        mappingStack.push(newMapping);
+        encoder = createEncoder(currentMapping);
+        const newCodePoint = parseInt(newUnicode.slice(2), 16);
+        // Update the cell display and title
+        cell.textContent = String.fromCodePoint(newCodePoint);
+        cell.title = `${byte} -> ${newUnicode}`;
+        dialog.close();
+        console.log(mappingStack, {byte,newUnicode});
+      } catch (e) {
+        // If validation fails, revert to the previous good mapping
+        if (mappingStack.length > 0) {
+          currentMapping = mappingStack[mappingStack.length - 1];
+          encoder = createEncoder(currentMapping);
+        }
+        // Show a styled alert with Unicode warning symbol and formatted error
+        alert(
+          `⚠️ Validation Error\n\n\t${e.message}\n\nReverted to previous mapping.`
+        );
+      }
+    } else {
+      alert(
+        `⚠️ Input Error\n\n\tInvalid Unicode format.\n\tUse "U+XXXX" where XXXX is a 4-digit hex code.`
+      );
+    }
+  };
+
+  dialog.show();
+  newUnicodeInput.oninput();
 }
 
 // Handle input type switching

@@ -88,12 +88,12 @@ export const CoreMapping = {
   "30": "U+25B2", "31": "U+25BC", "32": "U+0020", "33": "U+0021", 
 
   // Domain-speicifc mappings
-    "34": "U+0022",  // regular ASCII quote "
+    //"34": "U+0022",  // regular ASCII quote "
     // The below line demonstrates how a mapping could conceptually be modified to 
     // product output suitable for a HTML attribute. In this change the conflicting quote '"' character
     // is mapped to a unicode quote character that does not interefere with HTML attribute
     // parsing. 
-    //"34": "U+201C", // unicode quote
+    "34": "U+201C", // unicode quote
     // We provide an API for these changes
     // CoreMapping.tr(from, to)
     //

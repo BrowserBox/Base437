@@ -255,7 +255,8 @@ document.getElementById('decodeBtn').addEventListener('click', () => {
 // Convert demo image to Base64 if present
 const demoImage = document.getElementById('demoImage');
 if (demoImage) {
-  const htmlSafeMapping = CoreMapping.tr('"', 'U+201C').validate();
+  const htmlSafeMapping = CoreMapping; // CoreMapping includes this by default, but if it didn't, you'd call
+                                       // .tr('"', 'U+201C').validate();
   const htmlEncoder = createEncoder(htmlSafeMapping);
   window.onload = () => {
     const base64Src = htmlEncoder.toBase64Url(demoImage.getAttribute('src'));
